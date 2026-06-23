@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'OUARGAZ_APP_V6_6_PRO_WEB_ANDROID/mobile-chef-equipe/**'
+      - 'OUARGAZ_APP_V6_6_PRO_PREMIUM/mobile-chef-equipe/**'
       - '.github/workflows/build-apk.yml'
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: OUARGAZ_APP_V6_6_PRO_WEB_ANDROID/mobile-chef-equipe
+        working-directory: OUARGAZ_APP_V6_6_PRO_PREMIUM/mobile-chef-equipe
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,5 +78,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OUARGAZ_CHEF_EQUIPE_APK
-          path: OUARGAZ_APP_V6_6_PRO_WEB_ANDROID/mobile-chef-equipe/apk/OUARGAZ_CHEF_EQUIPE.apk
+          path: OUARGAZ_APP_V6_6_PRO_PREMIUM/mobile-chef-equipe/apk/OUARGAZ_CHEF_EQUIPE.apk
           if-no-files-found: error
