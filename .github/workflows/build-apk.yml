@@ -1,0 +1,82 @@
+name: Build OUARGAZ Chef Equipe APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'OUARGAZ_APP_V6_6_PRO_WEB_ANDROID/mobile-chef-equipe/**'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: OUARGAZ_APP_V6_6_PRO_WEB_ANDROID/mobile-chef-equipe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      # Le dossier android livré est minimal : on le régénère proprement.
+      - name: Regenerate Android project (modern embedding v2)
+        run: |
+          rm -rf android
+          flutter create --platforms=android --project-name ouargaz_chef_equipe .
+
+      # Restaure l'AndroidManifest personnalisé (label, permissions) après flutter create.
+      - name: Restore custom AndroidManifest
+        run: |
+          if [ -f ci/AndroidManifest.xml ]; then
+            cp ci/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+            echo "AndroidManifest personnalise restaure"
+          fi
+
+      # Active le core library desugaring APRES flutter create.
+      # Detecte automatiquement build.gradle (Groovy) ou build.gradle.kts (Kotlin).
+      # Non bloquant : les dependances actuelles n'exigent pas le desugaring.
+      - name: Patch core library desugaring (best effort)
+        continue-on-error: true
+        run: bash ci/patch_desugaring.sh
+
+      - name: Show app gradle (debug)
+        run: |
+          echo "----- build.gradle(.kts) -----"
+          cat android/app/build.gradle 2>/dev/null || cat android/app/build.gradle.kts 2>/dev/null || true
+
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses || true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Prepare artifact
+        run: |
+          mkdir -p apk
+          cp build/app/outputs/flutter-apk/app-release.apk apk/OUARGAZ_CHEF_EQUIPE.apk
+          ls -lh apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: OUARGAZ_CHEF_EQUIPE_APK
+          path: OUARGAZ_APP_V6_6_PRO_WEB_ANDROID/mobile-chef-equipe/apk/OUARGAZ_CHEF_EQUIPE.apk
+          if-no-files-found: error
